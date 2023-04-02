@@ -60,19 +60,20 @@ impl<T: Checker + 'static> Dispatcher<T> {
 
         let uuid = checker.get_uuid();
         let checker = Arc::new(Mutex::new(checker));
-        let checker_clone = checker.clone();
+        let checker_clone_1 = checker.clone();
+        let checker_clone_2 = checker.clone();
 
         let coroutine = tokio::spawn(async move {
             loop {
                 tokio::time::sleep(interval).await;
-                checker_clone.lock().await.check().await;
+                checker_clone_1.lock().await.check().await;
             }
         });
 
         let coroutine: Arc<tokio::task::JoinHandle<()>> = Arc::new(coroutine);
 
         self.uuid2coroutine.insert(uuid, coroutine.clone());
-        self.uuid2checker.insert(uuid, checker.clone());
+        self.uuid2checker.insert(uuid, checker_clone_2);
 
         Ok(uuid)
     }
