@@ -10,6 +10,9 @@ pub trait Checker : Send {
     fn get_protocol(&self) -> &Protocol;
     fn get_last_check(&self) -> Option<std::time::Instant>;
     fn get_last_error(&self) -> Option<String>;
+
+    fn report_success(&mut self);
+    fn report_failure(&mut self, error: String);
     
     fn set_health(&mut self, health: bool);
 }

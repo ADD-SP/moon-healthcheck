@@ -190,6 +190,14 @@ impl Checker for TcpChecker {
         self.state.get_last_error()
     }
 
+    fn report_success(&mut self) {
+        self.state.report_success()
+    }
+
+    fn report_failure(&mut self, error: String) {
+        self.state.report_failure(error)
+    }
+
     fn set_health(&mut self, health: bool) {
         self.state.set_health(health);
     }
@@ -252,6 +260,22 @@ mod test {
 
             server.abort();
         }
+
+        #[tokio::test]
+        async fn passive() {
+            let port = utils::test::rand_port();
+
+            let mut checker = TcpChecker::new("localhost", port, 1);
+            
+            checker.check().await;
+            assert!(checker.is_healthy());
+
+            checker.check().await;
+            assert!(!checker.is_healthy());
+
+            checker.report_success();
+            assert!(checker.is_healthy());
+        }
     }
 
     mod un_healthy {
@@ -303,6 +327,28 @@ mod test {
             
             checker.check().await;
             assert_eq!(checker.is_healthy(), false);
+        }
+
+        #[tokio::test]
+        async fn passive() {
+            let port = utils::test::rand_port();
+
+            let tcp_server = utils::test::tcp_server("localhost", port).await;
+
+            let mut checker = TcpChecker::new("localhost", port, 1);
+
+            for _ in 0..5 {
+                checker.check().await;
+                assert!(checker.is_healthy());
+            }
+
+            checker.report_failure(String::from("test"));
+            assert!(checker.is_healthy());
+
+            checker.report_failure(String::from("test"));
+            assert!(!checker.is_healthy());
+
+            tcp_server.abort();
         }
     }
 
