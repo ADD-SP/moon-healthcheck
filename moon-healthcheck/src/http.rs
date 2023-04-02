@@ -6,6 +6,7 @@ use super::state;
 use std::collections::HashMap;
 use tokio::time::{Duration, Instant};
 
+
 #[derive(PartialEq)]
 pub enum HttpMethod {
     Get,
@@ -15,6 +16,7 @@ pub enum HttpMethod {
     Head,
     Patch,
 }
+
 
 pub struct HttpChecker {
     uuid: uuid::Uuid,
@@ -33,6 +35,7 @@ pub struct HttpChecker {
 
     state: state::State,
 }
+
 
 /// HTTP checker
 ///
@@ -272,6 +275,7 @@ impl HttpChecker {
     }
 }
 
+
 #[async_trait::async_trait]
 impl Checker for HttpChecker {
     async fn check(&mut self) {
@@ -421,6 +425,7 @@ impl Checker for HttpChecker {
         self.state.set_health(health)
     }
 }
+
 
 #[cfg(test)]
 mod test {

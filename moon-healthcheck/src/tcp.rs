@@ -8,6 +8,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio::time::Duration;
 
+
 /// TCP checker
 pub struct TcpChecker {
     uuid: uuid::Uuid,
@@ -18,6 +19,7 @@ pub struct TcpChecker {
     expected_response: Option<Vec<u8>>,
     state: State,
 }
+
 
 /// TCP checker
 /// 
@@ -108,6 +110,7 @@ impl TcpChecker {
         self
     }
 }
+
 
 #[async_trait]
 impl Checker for TcpChecker {

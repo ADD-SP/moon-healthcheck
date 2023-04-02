@@ -8,7 +8,7 @@ pub mod test {
     use hyper::{Request, Response};
     use rand::Rng;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
-    use tokio::net::TcpListener;
+    use tokio::net::{TcpListener, UdpSocket};
     use tokio::task::JoinHandle;
 
     pub const HEADER_NAME: &str = "X-Test-Header";
@@ -143,6 +143,33 @@ pub mod test {
                     let _ = socket.read(&mut buf).await;
                     let _ = socket.write(&buf).await;
                 });
+            }
+        })
+    }
+
+    pub async fn udp_server_echo(host: &str, port: u16) -> JoinHandle<()> {
+        let addr = format!("{}:{}", host, port);
+        let socket = UdpSocket::bind(addr).await.unwrap();
+
+        tokio::spawn(async move {
+            let mut buf = [0; 1024];
+            loop {
+                let (size, addr) = socket.recv_from(&mut buf).await.unwrap();
+                let _ = socket.send_to(&buf[..size], &addr).await;
+            }
+        })
+    }
+
+    pub async fn udp_server_echo_delay(host: &str, port: u16) -> JoinHandle<()> {
+        let addr = format!("{}:{}", host, port);
+        let socket = UdpSocket::bind(addr).await.unwrap();
+
+        tokio::spawn(async move {
+            let mut buf = [0; 1024];
+            loop {
+                let (size, addr) = socket.recv_from(&mut buf).await.unwrap();
+                tokio::time::sleep(tokio::time::Duration::from_secs(TIMEOUT)).await;
+                let _ = socket.send_to(&buf[..size], &addr).await;
             }
         })
     }
