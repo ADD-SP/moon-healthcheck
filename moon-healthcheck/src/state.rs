@@ -10,6 +10,7 @@ enum Status {
 #[derive(PartialEq, Debug)]
 pub enum Protocol {
     Tcp,
+    Udp,
     Http,
 }
 

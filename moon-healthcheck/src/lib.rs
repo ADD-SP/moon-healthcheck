@@ -6,6 +6,7 @@
 //! * HTTP healthcheck
 //!     * HTTP GET, POST, PUT, DELETE, HEAD, PATCH
 //!     * HTTP/1.1, HTTP/2
+//! * UDP healthcheck
 //!
 //! # Examples
 //! ## TCP healthcheck
@@ -51,5 +52,6 @@ mod state;
 mod checker;
 
 pub mod tcp;
+pub mod udp;
 pub mod http;
 pub mod dispatcher;
