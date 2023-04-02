@@ -203,6 +203,14 @@ impl Checker for UdpChecker {
         self.state.get_last_error()
     }
 
+    fn report_success(&mut self) {
+        self.state.report_success()
+    }
+
+    fn report_failure(&mut self, error: String) {
+        self.state.report_failure(error)
+    }
+
     fn set_health(&mut self, health: bool) {
         self.state.set_health(health);
     }
@@ -227,7 +235,7 @@ mod test {
 
             for _ in 0..5 {
                 checker.check().await;
-                assert!(checker.is_healthy(), "checker should be healthy");
+                assert!(checker.is_healthy());
             }
 
             udp_server.abort();
@@ -245,10 +253,27 @@ mod test {
 
             for _ in 0..5 {
                 checker.check().await;
-                assert!(checker.is_healthy(), "checker should be healthy");
+                assert!(checker.is_healthy());
             }
 
             udp_server.abort();
+        }
+
+        #[tokio::test]
+        async fn passive() {
+            let port = utils::test::rand_port();
+            let payload: Vec<u8> = vec![0x01, 0x02, 0x03, 0x04];
+
+            let mut checker = UdpChecker::new("localhost", port, &payload, &payload, 1);
+
+            checker.check().await;
+            assert!(checker.is_healthy());
+
+            checker.check().await;
+            assert!(!checker.is_healthy());
+
+            checker.report_success();
+            assert!(checker.is_healthy());
         }
     }
 
@@ -267,7 +292,7 @@ mod test {
 
             for _ in 0..5 {
                 checker.check().await;
-                assert!(!checker.is_healthy(), "checker should be unhealthy");
+                assert!(!checker.is_healthy());
             }
         }
 
@@ -284,8 +309,31 @@ mod test {
 
             for _ in 0..5 {
                 checker.check().await;
-                assert!(!checker.is_healthy(), "checker should be unhealthy");
+                assert!(!checker.is_healthy());
             }
+        }
+
+        #[tokio::test]
+        async fn with_invalid_response() {
+            let port = utils::test::rand_port();
+            let payload: Vec<u8> = vec![0x01, 0x02, 0x03, 0x04];
+
+            let udp_server = utils::test::udp_server_echo("localhost", port).await;
+
+            let mut checker = UdpChecker::new("localhost", port, &payload, &payload, 1);
+
+            for _ in 0..5 {
+                checker.check().await;
+                assert!(checker.is_healthy());
+            }
+
+            checker.report_failure(String::from("test"));
+            assert!(checker.is_healthy());
+
+            checker.report_failure(String::from("test"));
+            assert!(!checker.is_healthy());
+
+            udp_server.abort();
         }
     }
 }

@@ -312,7 +312,7 @@ impl Checker for HttpChecker {
             HttpMethod::Head => {}
             _ => {
                 if self.request_body.is_none() {
-                    self.state.report_failure("Request body is required");
+                    self.state.report_failure(String::from("Request body is required"));
                     return;
                 }
 
@@ -323,13 +323,13 @@ impl Checker for HttpChecker {
         // let response = request.send().await;
         let rc = tokio::time::timeout_at(timeout_at, request.send()).await;
         if rc.is_err() {
-            self.state.report_failure("Request timed out");
+            self.state.report_failure(String::from("Request timed out"));
             return;
         }
 
         let response = rc.unwrap();
         if response.is_err() {
-            self.state.report_failure("Failed to send request");
+            self.state.report_failure(String::from("Failed to send request"));
             return;
         }
 
@@ -337,12 +337,11 @@ impl Checker for HttpChecker {
 
         if response.status().as_u16() != self.expected_status {
             self.state.report_failure(
-                format!(
+                String::from(format!(
                     "Expected status {}, got {}",
                     self.expected_status,
                     response.status().as_u16()
-                )
-                .as_str(),
+                ))
             );
             return;
         }
@@ -351,21 +350,21 @@ impl Checker for HttpChecker {
             let header = response.headers().get(key);
             if header.is_none() {
                 self.state
-                    .report_failure(format!("Expected header {} not found", key).as_str());
+                    .report_failure(String::from(format!("Expected header {} not found", key)));
                 return;
             }
 
             let header = header.unwrap().to_str();
             if header.is_err() {
                 self.state
-                    .report_failure(format!("Failed to parse header {}", key).as_str());
+                    .report_failure(String::from(format!("Failed to parse header {}", key)));
                 return;
             }
 
             let header = header.unwrap();
             if header != value {
                 self.state.report_failure(
-                    format!("Expected header {} to be {}, got {}", key, value, header).as_str(),
+                    String::from(format!("Expected header {} to be {}, got {}", key, value, header)),
                 );
                 return;
             }
@@ -378,13 +377,13 @@ impl Checker for HttpChecker {
 
         let rc = tokio::time::timeout_at(timeout_at, response.text()).await;
         if rc.is_err() {
-            self.state.report_failure("Request timed out");
+            self.state.report_failure(String::from("Request timed out"));
             return;
         }
 
         let body = rc.unwrap();
         if body.is_err() {
-            self.state.report_failure("Failed to parse response body");
+            self.state.report_failure(String::from("Failed to parse response body"));
             return;
         }
 
@@ -419,6 +418,14 @@ impl Checker for HttpChecker {
 
     fn get_last_error(&self) -> Option<String> {
         self.state.get_last_error()
+    }
+
+    fn report_success(&mut self) {
+        self.state.report_success()
+    }
+
+    fn report_failure(&mut self, error: String) {
+        self.state.report_failure(error)
     }
 
     fn set_health(&mut self, health: bool) {
@@ -640,6 +647,25 @@ mod test {
 
                         server.abort();
                     }
+                
+                    #[tokio::test]
+                    async fn passive() {
+                        let port = utils::test::rand_port();
+
+                        let url = format!("http://localhost:{}", port);
+                        let mut checker = HttpChecker::new(url, 1)
+                            .with_method(HttpMethod::Get)
+                            .with_version($http_version);
+
+                        checker.check().await;
+                        assert!(checker.is_healthy());
+
+                        checker.check().await;
+                        assert!(!checker.is_healthy());
+
+                        checker.report_success();
+                        assert!(checker.is_healthy());
+                    }
                 }
             };
         }
@@ -847,6 +873,32 @@ mod test {
                             checker.check().await;
                             assert_eq!(checker.is_healthy(), false);
                         }
+
+                        server.abort();
+                    }
+                
+                    #[tokio::test]
+                    async fn passive() {
+                        let port = utils::test::rand_port();
+                        let server =
+                            $http_server_fn("localhost", port, utils::test::http_handler_always_200)
+                                .await;
+
+                        let url = format!("http://localhost:{}", port);
+                        let mut checker = HttpChecker::new(url, 1)
+                            .with_method(HttpMethod::Get)
+                            .with_version($http_version);
+
+                        for _ in 0..5 {
+                            checker.check().await;
+                            assert!(checker.is_healthy());
+                        }
+
+                        checker.report_failure(String::from("test"));
+                        assert!(checker.is_healthy());
+
+                        checker.report_failure(String::from("test"));
+                        assert!(!checker.is_healthy());
 
                         server.abort();
                     }

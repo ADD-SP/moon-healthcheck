@@ -58,14 +58,12 @@ impl State {
         self.update();
     }
 
-    pub fn report_failure<T>(&mut self, err: T)
-    where
-        T: AsRef<str>,
+    pub fn report_failure(&mut self, err: String)
     {
         // usize is big enough to hold the failures
         self.consecutive_failures += 1;
         self.last_check = Some(time::Instant::now());
-        self.last_error = Some(err.as_ref().to_string().clone());
+        self.last_error = Some(err.clone());
         self.update();
     }
 
@@ -114,8 +112,8 @@ mod test {
     #[test]
     fn report_failure() {
         let mut state = State::new(Protocol::Tcp, 1);
-        state.report_failure("test");
-        state.report_failure("test");
+        state.report_failure(String::from("test"));
+        state.report_failure(String::from("test"));
         assert_eq!(state.is_healthy(), false);
         assert_eq!(state.get_last_error(), Some("test".to_string()));
     }

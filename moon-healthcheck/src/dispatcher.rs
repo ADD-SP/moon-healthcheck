@@ -44,7 +44,7 @@ impl<T: Checker + 'static> Dispatcher<T> {
     /// ```rust
     /// use moon_healthcheck::dispatcher::Dispatcher;
     /// use moon_healthcheck::tcp::TcpChecker;
-    /// use std::time::Duration;
+    /// use tokio::time::Duration;
     /// 
     /// #[tokio::main]
     /// async fn main() {
@@ -87,7 +87,7 @@ impl<T: Checker + 'static> Dispatcher<T> {
     /// ```rust
     /// use moon_healthcheck::dispatcher::Dispatcher;
     /// use moon_healthcheck::tcp::TcpChecker;
-    /// use std::time::Duration;
+    /// use tokio::time::Duration;
     /// 
     /// #[tokio::main]
     /// async fn main() {
@@ -113,7 +113,7 @@ impl<T: Checker + 'static> Dispatcher<T> {
     /// ```rust
     /// use moon_healthcheck::dispatcher::Dispatcher;
     /// use moon_healthcheck::tcp::TcpChecker;
-    /// use std::time::Duration;
+    /// use tokio::time::Duration;
     /// use tokio::time::sleep;
     /// 
     /// #[tokio::main]
@@ -133,6 +133,76 @@ impl<T: Checker + 'static> Dispatcher<T> {
         }
     }
 
+    /// Report a success event to a checker
+    /// 
+    /// # Arguments
+    /// * `uuid` - The UUID of the checker
+    /// 
+    /// # Example
+    /// ```rust
+    /// use moon_healthcheck::dispatcher::Dispatcher;
+    /// use moon_healthcheck::tcp::TcpChecker;
+    /// use tokio::time::Duration;
+    /// use tokio::time::sleep;
+    /// 
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let mut dispatcher: Dispatcher<TcpChecker> = Dispatcher::new();
+    ///     let tcp_checker = TcpChecker::new("localhost", 80, 1);
+    ///     let uuid = dispatcher.schedule(tcp_checker, Duration::from_secs(1)).unwrap();
+    ///     sleep(Duration::from_secs(3)).await;
+    ///     assert!(!dispatcher.is_healthy(&uuid).await.unwrap());
+    ///     dispatcher.report_success(&uuid).await.unwrap();
+    ///     assert!(dispatcher.is_healthy(&uuid).await.unwrap());
+    /// }
+    /// 
+    pub async fn report_success(&self, uuid: &Uuid) -> Result<(), String> {
+        if let Some(checker) = self.uuid2checker.get(uuid) {
+            checker.lock().await.report_success();
+            Ok(())
+        } else {
+            Err(format!("UUID {} does not exist", uuid))
+        }
+    }
+
+    /// Report a failure event to a checker
+    /// 
+    /// # Arguments
+    /// * `uuid` - The UUID of the checker
+    /// * `err` - The error message
+    /// 
+    /// # Example
+    /// ```rust
+    /// use moon_healthcheck::dispatcher::Dispatcher;
+    /// use moon_healthcheck::tcp::TcpChecker;
+    /// use tokio::time::Duration;
+    /// use tokio::time::sleep;
+    /// 
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let mut dispatcher: Dispatcher<TcpChecker> = Dispatcher::new();
+    ///     let tcp_checker = TcpChecker::new("localhost", 80, 1);
+    ///     let uuid = dispatcher.schedule(tcp_checker, Duration::from_secs(9999)).unwrap();
+    ///     
+    ///     assert!(dispatcher.is_healthy(&uuid).await.unwrap());
+    /// 
+    ///     dispatcher.report_failure(&uuid, String::from("test")).await.unwrap();
+    ///     assert!(dispatcher.is_healthy(&uuid).await.unwrap());
+    /// 
+    ///     dispatcher.report_failure(&uuid, String::from("test")).await.unwrap();
+    ///     assert!(!dispatcher.is_healthy(&uuid).await.unwrap());
+    /// }
+    /// ```
+    /// 
+    pub async fn report_failure(&self, uuid: &Uuid, err: String) -> Result<(), String> {
+        if let Some(checker) = self.uuid2checker.get(uuid) {
+            checker.lock().await.report_failure(err);
+            Ok(())
+        } else {
+            Err(format!("UUID {} does not exist", uuid))
+        }
+    }
+
     /// Set the health of a checker
     /// 
     /// # Arguments
@@ -143,7 +213,7 @@ impl<T: Checker + 'static> Dispatcher<T> {
     /// ```rust
     /// use moon_healthcheck::dispatcher::Dispatcher;
     /// use moon_healthcheck::tcp::TcpChecker;
-    /// use std::time::Duration;
+    /// use tokio::time::Duration;
     /// use tokio::time::sleep;
     /// 
     /// #[tokio::main]
@@ -172,7 +242,7 @@ impl<T: Checker + 'static> Dispatcher<T> {
     /// ```rust
     /// use moon_healthcheck::dispatcher::Dispatcher;
     /// use moon_healthcheck::tcp::TcpChecker;
-    /// use std::time::Duration;
+    /// use tokio::time::Duration;
     /// use tokio::time::sleep;
     /// 
     /// #[tokio::main]
@@ -199,7 +269,7 @@ mod test {
 
     use ::utils;
     use super::*;
-    use std::time::Duration;
+    use tokio::time::Duration;
     use tokio::time::sleep;
     use reqwest::Version;
 
@@ -310,6 +380,29 @@ mod test {
         assert_eq!(dispatcher.is_healthy(&uuid).await.unwrap(), true);
 
         http_server.abort();
+    }
+
+    #[tokio::test]
+    async fn passive() {
+        let mut dispatcher: Dispatcher<TcpChecker> = Dispatcher::new();
+
+        let port = utils::test::rand_port();
+        let tcp_checker = TcpChecker::new("localhost", port, 1);
+
+        let uuid = dispatcher
+            .schedule(tcp_checker, Duration::from_secs(9999))
+            .unwrap();
+
+        assert!(dispatcher.is_healthy(&uuid).await.unwrap());
+
+        dispatcher.report_failure(&uuid, String::from("test")).await.unwrap();
+        assert!(dispatcher.is_healthy(&uuid).await.unwrap());
+
+        dispatcher.report_failure(&uuid, String::from("test")).await.unwrap();
+        assert!(!dispatcher.is_healthy(&uuid).await.unwrap());
+
+        dispatcher.report_success(&uuid).await.unwrap();
+        assert!(dispatcher.is_healthy(&uuid).await.unwrap());
     }
 
     #[tokio::test]

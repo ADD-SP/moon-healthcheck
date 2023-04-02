@@ -8,6 +8,7 @@
 //!     * HTTP/1.1, HTTP/2
 //! * UDP healthcheck
 //! * Active (background) healthcheck
+//! * Passive (report manually) healthcheck
 //!
 //! # Examples
 //! ## TCP healthcheck
