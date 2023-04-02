@@ -1,0 +1,29 @@
+[package]
+name = "moon-healthcheck"
+version = "0.1.0"
+edition = "2021"
+authors = ["ADD-SP <add_sp@outlook.com>"]
+license = "MIT OR Apache-2.0"
+readme = "../README.md"
+repository = "https://github.com/ADD-SP/moon-healthcheck"
+description = """
+An async healthcheck library for Rust.
+"""
+
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+async-trait = "0.1.68"
+futures = "0.3.27"
+reqwest = "0.11.16"
+rand = "0.8.5"
+tokio = { version = "1.26.0", features = ["full"] }
+uuid = { version = "1.3.0", features = ["v4", "fast-rng", "macro-diagnostics"] }
+clap = "4.2.1"
+
+[dev-dependencies]
+hyper = { version = "0.14.25", features = ["full"] }
+signal-child = "1.0.5"
+tokio-test = "0.4.2"
+utils = { path = "../utils" }

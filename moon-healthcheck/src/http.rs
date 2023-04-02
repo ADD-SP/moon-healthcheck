@@ -424,7 +424,7 @@ impl Checker for HttpChecker {
 
 #[cfg(test)]
 mod test {
-    use super::super::utils;
+    use ::utils;
     use super::HttpChecker;
     use super::*;
 
