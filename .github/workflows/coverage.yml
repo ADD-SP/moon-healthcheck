@@ -1,0 +1,25 @@
+name: Coverage
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - uses: actions-rs/toolchain@b2417cde72dcf67f306c0ae8e0828a81bf0b189f
+      with:
+        profile: minimal
+        toolchain: nightly
+        components: llvm-tools-preview
+
+    - uses: Swatinem/fucov@304910a1829c88889a0b5671aa5ca7b1abbeebc0
+
+    # afterwards, upload the report to codecov
+    - uses: codecov/codecov-action@d9f34f8cd5cb3b3eb79b3e4b5dae3a16df499a70
+      with:
+        directory: coverage
