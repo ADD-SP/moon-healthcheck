@@ -1,4 +1,3 @@
-#[cfg(test)]
 pub mod test {
     use std::convert::Infallible;
 
@@ -12,10 +11,10 @@ pub mod test {
     use tokio::net::TcpListener;
     use tokio::task::JoinHandle;
 
-    pub(crate) const HEADER_NAME: &str = "X-Test-Header";
-    pub(crate) const HEADER_VALUE: &str = "test-value";
-    pub(crate) const BODY: [u8; 4] = [1, 2, 3, 4];
-    pub(crate) const TIMEOUT: u64 = 3;
+    pub const HEADER_NAME: &str = "X-Test-Header";
+    pub const HEADER_VALUE: &str = "test-value";
+    pub const BODY: [u8; 4] = [1, 2, 3, 4];
+    pub const TIMEOUT: u64 = 3;
 
     #[derive(Clone)]
     struct TokioExecutor;

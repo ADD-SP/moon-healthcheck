@@ -195,7 +195,7 @@ impl Checker for TcpChecker {
 
 #[cfg(test)]
 mod test {
-    use super::super::utils;
+    use ::utils;
     use super::*;
 
     mod healthy {

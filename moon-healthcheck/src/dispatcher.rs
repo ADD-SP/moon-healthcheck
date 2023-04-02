@@ -196,7 +196,7 @@ mod test {
     use crate::http::HttpChecker;
     use crate::tcp::TcpChecker;
 
-    use super::super::utils;
+    use ::utils;
     use super::*;
     use std::time::Duration;
     use tokio::time::sleep;

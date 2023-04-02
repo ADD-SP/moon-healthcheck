@@ -49,7 +49,6 @@
 
 mod state;
 mod checker;
-mod utils;
 
 pub mod tcp;
 pub mod http;
